@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dart_console/dart_console.dart';
@@ -8,6 +9,9 @@ import 'package:tint/tint.dart';
 
 import '../utils/context.dart';
 import 'base_service.dart';
+
+/// This files has been modify to best working with Parrot
+
 
 /// Sets default logger mode
 LoggerService get logger => getProvider();
@@ -40,16 +44,33 @@ class LoggerService extends ContextService {
 
   void success(String message) {
     _logger.info('${Icons.success.green()} $message');
+    consoleController.fine.add(utf8.encode(message));
   }
 
   void fail(String message) {
     _logger.info('${Icons.failure.red()} $message');
+    consoleController.error.add(utf8.encode(message));
   }
 
-  void warn(String message) => _logger.warn(message);
-  void info(String message) => _logger.info(message);
-  void err(String message) => _logger.err(message);
-  void detail(String message) => _logger.detail(message);
+  void warn(String message) {
+    _logger.warn(message);
+    consoleController.warning.add(utf8.encode(message));
+  }
+
+  void info(String message) {
+    _logger.info(message);
+    consoleController.info.add(utf8.encode(message));
+  }
+
+  void err(String message) {
+    _logger.err(message);
+    consoleController.error.add(utf8.encode(message));
+  }
+
+  void detail(String message) {
+    _logger.detail(message);
+    consoleController.fine.add(utf8.encode(message));
+  }
 
   void write(String message) => _logger.write(message);
   Progress progress(String message) {
@@ -60,7 +81,7 @@ class LoggerService extends ContextService {
       // Replace for a normal log
       logger.info(message);
     }
-
+    consoleController.fine.add(utf8.encode(message));
     return progress;
   }
 
@@ -139,22 +160,22 @@ final consoleController = ConsoleController();
 /// Console Controller
 class ConsoleController {
   /// stdout stream
-  final stdout = StreamController<List<int>>();
+  final stdout = StreamController<List<int>>.broadcast();
 
   /// stderr stream
-  final stderr = StreamController<List<int>>();
+  final stderr = StreamController<List<int>>.broadcast();
 
   /// warning stream
-  final warning = StreamController<List<int>>();
+  final warning = StreamController<List<int>>.broadcast();
 
   /// fine stream
-  final fine = StreamController<List<int>>();
+  final fine = StreamController<List<int>>.broadcast();
 
   /// info stream
-  final info = StreamController<List<int>>();
+  final info = StreamController<List<int>>.broadcast();
 
   /// error stream
-  final error = StreamController<List<int>>();
+  final error = StreamController<List<int>>.broadcast();
 }
 
 class Icons {
