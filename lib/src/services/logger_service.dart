@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:flutter/material.dart' as material;
 import 'package:dart_console/dart_console.dart';
 import 'package:interact/interact.dart' as interact;
 import 'package:mason_logger/mason_logger.dart';
@@ -11,7 +11,6 @@ import '../utils/context.dart';
 import 'base_service.dart';
 
 /// This files has been modify to best working with Parrot
-
 
 /// Sets default logger mode
 LoggerService get logger => getProvider();
@@ -176,6 +175,38 @@ class ConsoleController {
 
   /// error stream
   final error = StreamController<List<int>>.broadcast();
+
+  // Add new unified stream
+  final _unifiedController = StreamController<LogMessage>.broadcast();
+  Stream<LogMessage> get unifiedStream => _unifiedController.stream;
+
+  ConsoleController() {
+    // Listen to all existing streams and forward to unified stream
+    stdout.stream.listen((data) => _addToUnified(LogMessageType.stdout, data));
+    stderr.stream.listen((data) => _addToUnified(LogMessageType.stderr, data));
+    warning.stream
+        .listen((data) => _addToUnified(LogMessageType.warning, data));
+    fine.stream.listen((data) => _addToUnified(LogMessageType.fine, data));
+    info.stream.listen((data) => _addToUnified(LogMessageType.info, data));
+    error.stream.listen((data) => _addToUnified(LogMessageType.error, data));
+  }
+
+  void _addToUnified(LogMessageType type, List<int> data) {
+    _unifiedController.add(LogMessage(
+      type: type,
+      message: utf8.decode(data),
+    ));
+  }
+
+  void dispose() {
+    stdout.close();
+    stderr.close();
+    warning.close();
+    fine.close();
+    info.close();
+    error.close();
+    _unifiedController.close();
+  }
 }
 
 class Icons {
@@ -209,4 +240,42 @@ class Icons {
 
   // Square: ■
   static String get square => '■';
+}
+
+class LogMessage {
+  final LogMessageType type;
+  final String message;
+  final DateTime timestamp;
+
+  LogMessage({
+    required this.type,
+    required this.message,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+
+  material.Color get color {
+    switch (type) {
+      case LogMessageType.error:
+        return material.Colors.red;
+      case LogMessageType.warning:
+        return material.Colors.orange;
+      case LogMessageType.info:
+        return material.Colors.blue;
+      case LogMessageType.fine:
+        return material.Colors.green;
+      case LogMessageType.stdout:
+        return material.Colors.grey;
+      case LogMessageType.stderr:
+        return material.Colors.red.shade300;
+    }
+  }
+}
+
+enum LogMessageType {
+  stdout,
+  stderr,
+  warning,
+  fine,
+  info,
+  error,
 }
